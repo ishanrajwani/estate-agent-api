@@ -25,7 +25,7 @@ export async function POST(request) {
 
     // Location filter
     if (location) {
-      const searchLocation = location.toLowerCase();
+      const searchLocation = location.toLowerCase().trim();
 
       results = results.filter((property) =>
         property.location.toLowerCase().includes(searchLocation)
@@ -52,15 +52,23 @@ export async function POST(request) {
 
     // Preferences filter
     if (preferences) {
-      const requestedPreferences = Array.isArray(preferences)
-        ? preferences
-        : [preferences];
+      let requestedPreferences = [];
+
+      if (Array.isArray(preferences)) {
+        requestedPreferences = preferences;
+      } else {
+        requestedPreferences = preferences.split(",");
+      }
+
+      requestedPreferences = requestedPreferences
+        .map((preference) => preference.trim().toLowerCase())
+        .filter(Boolean);
 
       results = results.filter((property) =>
         requestedPreferences.every((preference) =>
           property.features.some(
             (feature) =>
-              feature.toLowerCase() === preference.toLowerCase()
+              feature.toLowerCase().trim() === preference
           )
         )
       );

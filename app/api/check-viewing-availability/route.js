@@ -19,17 +19,22 @@ export async function POST(request) {
     const eventTypeId = process.env.CAL_EVENT_TYPE_ID;
     const apiKey = process.env.CAL_API_KEY;
 
-    const response = await fetch(
-      `https://api.cal.com/v2/slots/available?eventTypeId=${eventTypeId}&startTime=${encodeURIComponent(startTime)}&endTime=${encodeURIComponent(endTime)}`,
-      {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-          "cal-api-version": "2024-09-04",
-        },
-      }
-    );
+    const url = new URL("https://api.cal.com/v2/slots");
+
+    url.searchParams.append("eventTypeId", eventTypeId);
+    url.searchParams.append("start", startTime);
+    url.searchParams.append("end", endTime);
+    url.searchParams.append("timeZone", "Asia/Karachi");
+    url.searchParams.append("format", "range");
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "cal-api-version": "2024-09-04",
+      },
+    });
 
     const data = await response.json();
 

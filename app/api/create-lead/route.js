@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "../../../lib/supabase";
 
 export async function POST(request) {
   try {
@@ -13,41 +14,54 @@ export async function POST(request) {
       budget,
       bedrooms,
       preferences,
-      moveDate
+      moveDate,
     } = body;
 
-    // Required fields
     if (!name || !email || !phone) {
       return NextResponse.json(
         {
           success: false,
-          error: "Name, email, and phone are required."
+          error: "Name, email, and phone are required.",
         },
         { status: 400 }
       );
     }
 
-    // Create lead
-    const lead = {
-      id: `LEAD-${Date.now()}`,
-      name,
-      email,
-      phone,
-      purpose: purpose || null,
-      location: location || null,
-      budget: budget ? Number(budget) : null,
-      bedrooms: bedrooms ? Number(bedrooms) : null,
-      preferences: preferences || null,
-      moveDate: moveDate || null,
-      createdAt: new Date().toISOString()
-    };
+    const { data, error } = await supabase
+      .from("leads")
+      .insert([
+        {
+          name,
+          email,
+          phone,
+          purpose: purpose || null,
+          location: location || null,
+          budget: budget ? Number(budget) : null,
+          bedrooms: bedrooms ? Number(bedrooms) : null,
+          preferences: preferences || null,
+          move_date: moveDate || null,
+        },
+      ])
+      .select()
+      .single();
 
-    console.log("New property lead:", lead);
+    if (error) {
+      console.error("Supabase create lead error:", error);
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unable to create lead.",
+          error: error.message,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: "Lead created successfully.",
-      lead
+      lead: data,
     });
   } catch (error) {
     console.error("Create lead error:", error);
@@ -55,7 +69,7 @@ export async function POST(request) {
     return NextResponse.json(
       {
         success: false,
-        error: "Unable to create lead."
+        message: "Unable to create lead.",
       },
       { status: 500 }
     );

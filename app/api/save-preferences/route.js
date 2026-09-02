@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { supabase } from "../../../lib/supabase";
 
 export async function POST(request) {
   try {
@@ -34,25 +35,44 @@ export async function POST(request) {
       );
     }
 
-    const savedPreferences = {
-      preferenceId: `PREF-${Date.now()}`,
-      name,
-      email,
-      purpose,
-      location,
-      budget,
-      bedrooms,
-      preferences,
-      moveDate,
-      savedAt: new Date().toISOString(),
-    };
+    const { data, error } = await supabase
+      .from("leads")
+      .insert([
+        {
+          name,
+          email,
+          purpose,
+          location,
+          budget: Number(budget),
+          bedrooms: Number(bedrooms),
+          preferences,
+          move_date: moveDate,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Supabase save preferences error:", error);
+
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Failed to save customer preferences.",
+          error: error.message,
+        },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: "Customer preferences saved successfully.",
-      preferences: savedPreferences,
+      preferences: data,
     });
   } catch (error) {
+    console.error("Save preferences error:", error);
+
     return NextResponse.json(
       {
         success: false,

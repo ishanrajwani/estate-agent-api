@@ -4,13 +4,19 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    const { startTime, endTime } = body;
+    const {
+      name,
+      email,
+      phone,
+      start,
+      propertyId,
+    } = body;
 
-    if (!startTime || !endTime) {
+    if (!start) {
       return NextResponse.json(
         {
           success: false,
-          message: "startTime and endTime are required.",
+          message: "start is required.",
         },
         { status: 400 }
       );
@@ -18,6 +24,34 @@ export async function POST(request) {
 
     const eventTypeId = process.env.CAL_EVENT_TYPE_ID;
     const apiKey = process.env.CAL_API_KEY;
+
+    if (!eventTypeId || !apiKey) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Cal.com configuration is missing.",
+        },
+        { status: 500 }
+      );
+    }
+
+    const selectedDate = new Date(start);
+
+    if (Number.isNaN(selectedDate.getTime())) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Invalid start datetime.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const startTime = selectedDate.toISOString();
+
+    const endDate = new Date(selectedDate.getTime() + 60 * 60 * 1000);
+
+    const endTime = endDate.toISOString();
 
     const url = new URL("https://api.cal.com/v2/slots");
 
@@ -42,7 +76,7 @@ export async function POST(request) {
       return NextResponse.json(
         {
           success: false,
-          message: "Failed to fetch available viewing slots.",
+          message: "Failed to check viewing availability.",
           error: data,
         },
         { status: response.status }
@@ -51,14 +85,18 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: "Available viewing slots retrieved successfully.",
+      message: "Viewing availability checked successfully.",
+      propertyId: propertyId || null,
+      requestedStart: start,
       data,
     });
   } catch (error) {
+    console.error("Check viewing availability error:", error);
+
     return NextResponse.json(
       {
         success: false,
-        message: "Something went wrong while checking availability.",
+        message: "Something went wrong while checking viewing availability.",
         error: error.message,
       },
       { status: 500 }
